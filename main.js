@@ -1,104 +1,44 @@
-/**
- * main.js — progressive-enhancement behaviors.
- * The site is fully readable and navigable with this file absent;
- * it only adds the mobile nav toggle and inline form validation.
- */
-(function () {
-  "use strict";
+document.addEventListener("DOMContentLoaded", () => {
+  const themeToggle = document.getElementById("theme-toggle");
+  const mobileToggle = document.getElementById("mobile-toggle");
+  const navLinks = document.getElementById("nav-links");
+  const themeIcon = themeToggle.querySelector("i");
+  const html = document.documentElement;
 
-  /* ---------------------------------------------------------------------
-     Mobile navigation toggle
-     --------------------------------------------------------------------- */
-  var toggle = document.querySelector(".nav-toggle");
-  var nav = document.getElementById("primary-navigation");
+  // Retrieve saved preference or default to dark
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  html.setAttribute("data-theme", savedTheme);
+  updateThemeIcon(savedTheme);
 
-  if (toggle && nav) {
-    toggle.addEventListener("click", function () {
-      var isOpen = nav.classList.toggle("is-open");
-      toggle.setAttribute("aria-expanded", String(isOpen));
-    });
-  }
+  // Theme switch logic
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = html.getAttribute("data-theme");
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    
+    html.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+    updateThemeIcon(newTheme);
+  });
 
-  /* ---------------------------------------------------------------------
-     Contact form validation
-     Accessible pattern:
-     - Native HTML validation attributes remain as the baseline.
-     - On submit, we run our own checks so we can move focus to the
-       first invalid field and announce errors via aria-live regions.
-     - Each error message is tied to its input with aria-describedby.
-     --------------------------------------------------------------------- */
-  var form = document.getElementById("contact-form");
-  if (!form) return;
-
-  var statusRegion = document.getElementById("form-status");
-
-  function setFieldError(field, message) {
-    var wrapper = field.closest(".field");
-    var errorEl = document.getElementById(field.id + "-error");
-    if (!wrapper || !errorEl) return;
-    if (message) {
-      wrapper.classList.add("has-error");
-      errorEl.textContent = message;
-      field.setAttribute("aria-invalid", "true");
+  function updateThemeIcon(theme) {
+    if (theme === "light") {
+      themeIcon.classList.remove("fa-moon");
+      themeIcon.classList.add("fa-sun");
     } else {
-      wrapper.classList.remove("has-error");
-      errorEl.textContent = "";
-      field.removeAttribute("aria-invalid");
+      themeIcon.classList.remove("fa-sun");
+      themeIcon.classList.add("fa-moon");
     }
   }
 
-  function validateField(field) {
-    if (field.validity.valid) {
-      setFieldError(field, "");
-      return true;
-    }
-    var message = "This field needs your attention.";
-    if (field.validity.valueMissing) {
-      message = field.dataset.errorRequired || "This field is required.";
-    } else if (field.validity.typeMismatch && field.type === "email") {
-      message = "Enter a valid email address, e.g. name@example.com.";
-    } else if (field.validity.tooShort) {
-      message = "Please enter at least " + field.minLength + " characters.";
-    }
-    setFieldError(field, message);
-    return false;
-  }
-
-  var requiredFields = form.querySelectorAll("[required]");
-  requiredFields.forEach(function (field) {
-    field.addEventListener("blur", function () {
-      validateField(field);
-    });
+  // Mobile menu toggle
+  mobileToggle.addEventListener("click", () => {
+    navLinks.classList.toggle("active");
   });
 
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
-    var isValid = true;
-    var firstInvalid = null;
-
-    requiredFields.forEach(function (field) {
-      var fieldValid = validateField(field);
-      if (!fieldValid && !firstInvalid) {
-        firstInvalid = field;
-      }
-      isValid = isValid && fieldValid;
+  // Close mobile menu on navigation link click
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("active");
     });
-
-    if (!isValid) {
-      statusRegion.textContent =
-        "There are errors in the form. Please review the highlighted fields.";
-      statusRegion.classList.remove("is-visible");
-      if (firstInvalid) firstInvalid.focus();
-      return;
-    }
-
-    /* No backend is wired up in this skeleton; simulate a successful
-       submission and confirm it accessibly. Replace with a real
-       fetch()/endpoint when the site is connected to a server. */
-    form.reset();
-    statusRegion.textContent =
-      "Thank you — your message has been sent. I will reply within 2–3 days.";
-    statusRegion.classList.add("is-visible");
-    statusRegion.focus();
   });
-})();
+});
